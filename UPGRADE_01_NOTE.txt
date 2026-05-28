@@ -1,0 +1,12 @@
+Upgrade 01 from known-good base
+
+Base used: weeklyflow_original_plus_light_live_wallpaper.zip / WeeklyFlow_PWA_KNOWN_GOOD_BASE
+Change added: lightweight Med Interview tab only.
+
+Kept deliberately unchanged:
+- no video wallpaper
+- no heavy transparency branch
+- no stacked glass/blur effects
+- existing PWA/offline/backup/wallpaper/live-clock features retained
+
+Upload all files in this folder to the repository root so index.html, app.js, styles.css, manifest.json and sw.js are visible at the top level.

@@ -1,0 +1,25 @@
+{
+  "id": "/weekly-flow/",
+  "name": "Weekly Flow — Liquid Glass",
+  "short_name": "Weekly Flow",
+  "description": "A Liquid Glass timetable, focus, progress and reflection app.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#090C17",
+  "theme_color": "#347DFF",
+  "categories": ["productivity", "education", "lifestyle"],
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Today", "short_name": "Today", "url": "./index.html#today", "description": "Open today’s timetable" },
+    { "name": "Plan", "short_name": "Plan", "url": "./index.html#plan", "description": "Add extra tasks" },
+    { "name": "Insights", "short_name": "Insights", "url": "./index.html#insights", "description": "View weekly progress" }
+  ]
+}

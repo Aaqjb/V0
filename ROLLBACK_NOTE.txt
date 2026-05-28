@@ -1,0 +1,14 @@
+Weekly Flow — Known Good Base
+
+This package is a clean rollback to the confirmed smooth version:
+weeklyflow_original_plus_light_live_wallpaper.zip
+
+Only the service-worker cache name was changed so browsers/Vercel do not keep using an older broken cached build.
+
+Use this as the base for future work. Add one feature at a time and test after each deployment.
+
+Vercel settings:
+Framework Preset: Other
+Build Command: leave empty
+Install Command: leave empty
+Output Directory: .
