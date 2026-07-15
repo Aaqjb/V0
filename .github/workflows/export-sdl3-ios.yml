@@ -1,0 +1,38 @@
+name: Export SDL3 iOS
+run-name: Export SDL3 iOS (#${{ github.event.pull_request.number }})
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".sdl3-export-trigger"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    if: github.head_ref == 'tool/public-source-export'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone exact public SDL3 tag
+        run: |
+          set -euo pipefail
+          git clone --branch 2026.320.0 --single-branch https://github.com/ppy/SDL3-CS.git source
+          git -C source lfs pull || true
+
+      - name: Package iOS framework
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          cp -a source/native/ios/SDL3.xcframework build/
+          find build/SDL3.xcframework -type f -print0 | sort -z | xargs -0 sha256sum > build/sha256.txt
+          tar -C build -czf build/SDL3.xcframework-2026.320.0.tar.gz SDL3.xcframework
+
+      - name: Upload framework
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDL3-xcframework-2026.320.0
+          path: build
+          if-no-files-found: error
