@@ -1,0 +1,49 @@
+name: Find MeloNX icons
+run-name: Find MeloNX icons (#${{ github.event.pull_request.number }})
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".icons-export-trigger"
+
+permissions:
+  contents: read
+
+jobs:
+  find:
+    if: github.head_ref == 'tool/public-source-export'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone public MeloNX history
+        run: |
+          set -euo pipefail
+          git clone --mirror https://github.com/AzureDominus/melonx.git mirror.git
+
+      - name: Export matching icon blobs
+        run: |
+          set -euo pipefail
+          mkdir -p build/icons
+          cat > build/targets.tsv <<'TARGETS'
+          635b0db6b8508b54f650b8f9145fb5161f00e024	MeloNXmas.png
+          5a3f6cd3bfdd9f522b4764e195bd70d8fc5d0198	MeluckyNX.png
+          ed8288ad96460083f98e5851de49d61b8bc3a1ca	melonxfinal.png
+          d8572e96d6362125a04eb036db53bcd7423aff6f	Mel-o-lantern.png
+          0942653675ea682f15557f99e6d7109ea8b4234f	49.jpeg
+          TARGETS
+          : > build/matches.tsv
+          while IFS=$'\t' read -r blob name; do
+            if git -C mirror.git cat-file -e "$blob^{blob}" 2>/dev/null; then
+              git -C mirror.git cat-file blob "$blob" > "build/icons/$name"
+              printf '%s\t%s\n' "$blob" "$name" >> build/matches.tsv
+            fi
+          done < build/targets.tsv
+          find build/icons -type f -print0 | sort -z | xargs -0 sha256sum > build/sha256.txt || true
+
+      - name: Upload icon matches
+        uses: actions/upload-artifact@v4
+        with:
+          name: azure-melonx-icon-matches
+          path: build
+          if-no-files-found: error
