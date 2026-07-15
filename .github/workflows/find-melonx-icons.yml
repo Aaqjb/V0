@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: find-melonx-icons-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   find:
     if: github.head_ref == 'tool/public-source-export'
@@ -19,7 +23,7 @@ jobs:
       - name: Clone public MeloNX history
         run: |
           set -euo pipefail
-          git clone --mirror https://github.com/AzureDominus/melonx.git mirror.git
+          git clone --mirror https://github.com/VertexSelection/MeloVertex.git mirror.git
 
       - name: Export matching icon blobs
         run: |
@@ -44,6 +48,6 @@ jobs:
       - name: Upload icon matches
         uses: actions/upload-artifact@v4
         with:
-          name: azure-melonx-icon-matches
+          name: vertex-melonx-icon-matches
           path: build
           if-no-files-found: error
