@@ -1,0 +1,62 @@
+name: Export public Ryubing blobs
+run-name: Export public Ryubing blobs (#${{ github.event.pull_request.number }})
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".public-blob-targets.tsv.xz.b64"
+      - ".public-blob-trigger"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: export-public-ryubing-blobs-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  export:
+    if: github.head_ref == 'tool/public-source-export'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout target list
+        uses: actions/checkout@v4
+
+      - name: Decode target object list
+        run: |
+          set -euo pipefail
+          base64 --decode .public-blob-targets.tsv.xz.b64 | xz --decompress > targets.tsv
+          test -s targets.tsv
+
+      - name: Clone complete public Ryubing history
+        run: |
+          set -euo pipefail
+          git clone --mirror https://git.ryujinx.app/Ryubing/Ryujinx.git ryubing.git
+
+      - name: Export exact public blobs
+        run: |
+          set -euo pipefail
+          mkdir -p build/files
+          : > build/matches.tsv
+          : > build/misses.tsv
+          while IFS=$'\t' read -r blob path; do
+            if git -C ryubing.git cat-file -e "$blob^{blob}" 2>/dev/null; then
+              mkdir -p "build/files/$(dirname "$path")"
+              git -C ryubing.git cat-file blob "$blob" > "build/files/$path"
+              printf '%s\t%s\n' "$blob" "$path" >> build/matches.tsv
+            else
+              printf '%s\t%s\n' "$blob" "$path" >> build/misses.tsv
+            fi
+          done < targets.tsv
+          printf 'matches=%s\nmisses=%s\n' "$(wc -l < build/matches.tsv)" "$(wc -l < build/misses.tsv)" | tee build/summary.txt
+          find build/files -type f -print0 | sort -z | xargs -0 sha256sum > build/sha256.txt || true
+
+      - name: Upload exact public blobs
+        uses: actions/upload-artifact@v4
+        with:
+          name: public-ryubing-blob-matches
+          path: build
+          if-no-files-found: error
