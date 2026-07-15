@@ -1,0 +1,55 @@
+name: Re-encode MeloNX icons
+run-name: Re-encode MeloNX icons (#${{ github.event.pull_request.number }})
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".reencode-icons-trigger"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.head_ref == 'tool/public-source-export'
+    runs-on: macos-latest
+    steps:
+      - name: Clone public MeloNX icons
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/AzureDominus/melonx.git source
+
+      - name: Re-encode with Apple ImageIO
+        run: |
+          set -euo pipefail
+          mkdir -p build/output
+          cat > build/inputs.tsv <<'INPUTS'
+          MeloNXmas	source/src/MeloNX/MeloNX/Assets/Assets.xcassets/MeloNXmas.appiconset/MeloNXmas.png	635b0db6b8508b54f650b8f9145fb5161f00e024
+          MeluckyNX	source/src/MeloNX/MeloNX/Assets/Assets.xcassets/MeluckyNX.appiconset/MeluckyNX.png	5a3f6cd3bfdd9f522b4764e195bd70d8fc5d0198
+          melonxfinal	source/src/MeloNX/MeloNX/Assets/Assets.xcassets/skeuomorphic.appiconset/melonxfinal.png	ed8288ad96460083f98e5851de49d61b8bc3a1ca
+          lantern	source/src/MeloNX/MeloNX/Assets/Assets.xcassets/Mel-o-Lantern.appiconset/Mel-o-lantern.png	d8572e96d6362125a04eb036db53bcd7423aff6f
+          INPUTS
+          : > build/results.tsv
+          while IFS=$'\t' read -r name input expected; do
+            for option in default low normal high best 100; do
+              output="build/output/${name}-${option}.png"
+              if [ "$option" = default ]; then
+                sips -s format png "$input" --out "$output" >/dev/null
+              else
+                sips -s format png -s formatOptions "$option" "$input" --out "$output" >/dev/null
+              fi
+              actual="$(git hash-object "$output")"
+              size="$(stat -f%z "$output")"
+              printf '%s\t%s\t%s\t%s\t%s\n' "$name" "$option" "$actual" "$expected" "$size" >> build/results.tsv
+            done
+          done < build/inputs.tsv
+          cat build/results.tsv
+
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: melonx-icon-reencoding-results
+          path: build
+          if-no-files-found: error
