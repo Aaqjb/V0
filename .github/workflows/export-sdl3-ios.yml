@@ -11,16 +11,22 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: export-sdl3-ios-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
   export:
     if: github.head_ref == 'tool/public-source-export'
     runs-on: ubuntu-latest
     steps:
       - name: Clone exact public SDL3 tag
+        env:
+          GIT_LFS_SKIP_SMUDGE: "1"
         run: |
           set -euo pipefail
-          git clone --branch 2026.320.0 --single-branch https://github.com/ppy/SDL3-CS.git source
-          git -C source lfs pull || true
+          git clone --depth 1 --branch 2026.320.0 --single-branch --filter=blob:none https://github.com/ppy/SDL3-CS.git source
+          git -C source lfs pull --include="native/ios/SDL3.xcframework/**" --exclude=""
 
       - name: Package iOS framework
         run: |
