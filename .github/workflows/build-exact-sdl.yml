@@ -1,0 +1,60 @@
+name: Build exact SDL
+run-name: Build exact SDL (#${{ github.event.pull_request.number }})
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".exact-sdl-trigger"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-exact-sdl-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: github.head_ref == 'tool/public-source-export'
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Clone exact SDL revision
+        run: |
+          set -euo pipefail
+          git clone https://github.com/libsdl-org/SDL.git source
+          git -C source checkout --detach e4f75bac451230d31695158ed35f459e7a04585c
+
+      - name: Build official SDL release image
+        run: |
+          set -euo pipefail
+          python3 source/build-scripts/build-release.py \
+            --actions dmg \
+            --commit e4f75bac451230d31695158ed35f459e7a04585c \
+            --root "$PWD/source" \
+            --github \
+            --debug
+          find dist -maxdepth 2 -type f -print
+
+      - name: Extract iOS framework
+        run: |
+          set -euo pipefail
+          mkdir -p build/mount build/output
+          dmg="$(find dist -name '*.dmg' -type f -print -quit)"
+          test -n "$dmg"
+          hdiutil attach "$dmg" -mountpoint "$PWD/build/mount" -nobrowse
+          framework="$(find build/mount -path '*/SDL3.xcframework/ios-arm64/SDL3.framework' -type d -print -quit)"
+          test -n "$framework"
+          ditto "$framework" build/output/SDL3.framework
+          hdiutil detach "$PWD/build/mount"
+          find build/output/SDL3.framework -type f -print0 | sort -z | xargs -0 shasum -a 256 > build/output/sha256.txt
+          tar -C build/output -czf build/output/SDL3-ios-arm64-e4f75ba.tar.gz SDL3.framework
+
+      - name: Upload exact framework
+        uses: actions/upload-artifact@v4
+        with:
+          name: SDL3-ios-arm64-e4f75ba
+          path: build/output
+          if-no-files-found: error
